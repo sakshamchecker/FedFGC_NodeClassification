@@ -146,4 +146,4 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     # Step 4: Package subgraphs into client-specific datasets
     client_datasets = [Data(x=subgraph.x, edge_index=subgraph.edge_index, y=subgraph.y) for subgraph in client_subgraphs]
 
-    return client_datasets, test_data, data.num_features, data.num_classes
+    return client_datasets, test_data, cora_dataset.num_features, cora_dataset.num_classes
