@@ -6,7 +6,7 @@ from torch_geometric.datasets import Planetoid, TUDataset
 from torch_geometric.nn import GCNConv
 from torch_geometric.data import Data, Batch
 from torch_geometric.loader import DataLoader
-from privacy.coarsening import coarsening
+# from privacy.coarsening import coarsening
 from torch_geometric.utils import to_dense_adj,to_edge_index, from_scipy_sparse_matrix
 import scipy.sparse as scpy
 import numpy as np
