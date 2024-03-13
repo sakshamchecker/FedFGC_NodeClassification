@@ -84,4 +84,4 @@ def test(model, test_data):
     correct = (pred == test_data.y).sum()
     acc = int(correct) / int(test_data.y.shape[0])
     loss = criterion(out, test_data.y)
-    return acc, loss
+    return loss, acc
