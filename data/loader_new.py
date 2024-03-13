@@ -128,6 +128,10 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     # Index the Data object attributes with Python lists
     train_data = Data(x=data.x[train_idx], edge_index=data.edge_index, y=data.y[train_idx])
     test_data = Data(x=data.x[test_idx], edge_index=data.edge_index, y=data.y[test_idx])
+    if cr:
+        X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
+        X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
+        train_data=Data(x=X_new, edge_index=edge_idx, y=labels_new)
     # Step 2: Define the number of clients and split the nodes
     num_clients = client_number
     num_nodes = train_data.num_nodes
@@ -142,9 +146,7 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
         end_idx = start_idx + size
         client_nodes = node_indices[start_idx:end_idx]
         client_subgraph = data.subgraph(client_nodes)
-        if cr:
-            X,adj,labels,features,NO_OF_CLASSES= preprocess(client_subgraph.x, client_subgraph.edge_index, client_subgraph.y)
-            client_subgraph=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
+        
         client_subgraphs.append(client_subgraph)
         start_idx = end_idx
     test_nodes= test_data.num_nodes
