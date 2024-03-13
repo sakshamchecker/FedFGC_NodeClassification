@@ -172,6 +172,14 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
     # Index the Data object attributes with Python lists
     train_data = Data(x=data.x[train_idx], edge_index=data.edge_index, y=data.y[train_idx])
     test_data = Data(x=data.x[test_idx], edge_index=data.edge_index, y=data.y[test_idx])
+    train_nodes= train_data.num_nodes
+    node_indices = torch.randperm(train_nodes)
+    train_sub=data.subgraph(node_indices)
+    train_data = Data(x=train_sub.x, edge_index=train_sub.edge_index, y=train_sub.y)
+    test_nodes= test_data.num_nodes
+    node_indices = torch.randperm(test_nodes)
+    test_sub=data.subgraph(node_indices)
+    test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
     if cr:
         X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
         X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
