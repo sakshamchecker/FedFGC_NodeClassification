@@ -72,6 +72,16 @@ def train(model, train_data, epochs, lr, device, dp, priv_budget):
         out = model(train_data.x, train_data.edge_index)
         loss = criterion(out, train_data.y)
         loss.backward()
+        if dp:
+            delta=0.2
+            # sigma=delta/(2*priv_budget)
+            sigma=priv_budget
+            clip_value=1.1
+            torch.nn.utils.clip_grad_norm_(model.parameters(), clip_value)
+            for param in model.parameters():
+                    if param.grad is not None:
+                        noise = torch.tensor(torch.randn_like(param.grad) * sigma)
+                        param.grad += noise 
         optimizer.step()
         print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}')
     return model

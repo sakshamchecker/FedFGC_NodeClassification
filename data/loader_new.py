@@ -1,7 +1,7 @@
 import numpy as np
 from torch_geometric.datasets import TUDataset
 from torch_geometric.data import DataLoader
-from privacy.coarsening import coarsen_a_dataset
+from privacy.coarsening import coarse, preprocess
 def partition_class_samples_with_dirichlet_distribution(
     N, alpha, client_num, idx_batch, idx_k
 ):
@@ -140,6 +140,8 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
         end_idx = start_idx + size
         client_nodes = node_indices[start_idx:end_idx]
         client_subgraph = data.subgraph(client_nodes)
+        if cr:
+            client_subgraph=coarse()
         client_subgraphs.append(client_subgraph)
         start_idx = end_idx
     test_nodes= test_data.num_nodes
