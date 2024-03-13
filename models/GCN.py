@@ -11,8 +11,8 @@ from torch_geometric.nn import GCNConv
 
 
 class GCN(torch.nn.Module):
-    def __init__(self):
-        super(GCN, self).__init__(num_node_features, num_classes)
+    def __init__(self,num_node_features, num_classes):
+        super(GCN, self).__init__()
         self.conv1 = GCNConv(num_node_features, 64)
         self.conv2 = GCNConv(64, num_classes)
 
