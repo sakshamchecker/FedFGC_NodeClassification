@@ -1,0 +1,5 @@
+,Method,Coarsen,Privacy,Data,Round,Client Number,Loss,Accuracy
+0,AllData,False,False,Test,0,0,0.81331,0.85714
+1,AllData,False,True,Test,0,0,0.74751,0.71429
+2,AllData,True,False,Test,0,0,2.67148,0.73016
+3,AllData,True,True,Test,0,0,0.88761,0.8254

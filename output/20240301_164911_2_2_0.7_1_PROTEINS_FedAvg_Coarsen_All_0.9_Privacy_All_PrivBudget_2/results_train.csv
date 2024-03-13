@@ -1,0 +1,3 @@
+,Method,Coarsen,Privacy,Data,Round,Client Number,Loss,Accuracy
+0,AllData,False,False,Train,0,0,0.67266,0.02146
+1,AllData,False,True,Train,0,0,0.58408,0.02181

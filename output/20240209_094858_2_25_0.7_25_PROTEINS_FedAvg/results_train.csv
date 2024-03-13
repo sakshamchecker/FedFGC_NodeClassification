@@ -1,0 +1,24 @@
+,Method,Coarsen,Privacy,Data,Round,Client Number,Loss,Accuracy
+0,AllData,False,False,Train,0,0,0.59668,0.74528
+1,AllData,False,True,Train,0,0,2.18576,0.67655
+2,AllData,True,False,Train,0,0,0.77453,0.621
+3,AllData,True,True,Train,0,0,4.16548,0.55479
+4,FL,False,False,Train,0,0,0.51161,0.75301
+5,FL,False,False,Train,0,1,0.48615,0.78293
+6,FL,False,False,Train,1,0,0.47161,0.78313
+7,FL,False,False,Train,1,1,0.47727,0.79512
+8,FL,False,False,Train,2,1,0.43455,0.79268
+9,FL,False,False,Train,2,0,0.456,0.76506
+10,FL,False,False,Train,3,0,0.42491,0.80422
+11,FL,False,False,Train,3,1,0.42016,0.80488
+12,FL,False,False,Train,4,0,0.36419,0.8494
+13,FL,False,False,Train,4,1,0.38972,0.80732
+14,FL,False,False,Train,5,0,0.38719,0.86145
+15,FL,False,False,Train,5,1,0.3797,0.82439
+16,FL,False,False,Train,6,1,0.36499,0.83659
+17,FL,False,False,Train,6,0,0.35171,0.83434
+18,FL,False,False,Train,7,0,0.3319,0.84639
+19,FL,False,False,Train,7,1,0.3489,0.83902
+20,FL,False,False,Train,8,0,0.30846,0.87349
+21,FL,False,False,Train,8,1,0.35183,0.84146
+22,FL,False,False,Train,9,1,0.33551,0.8439
