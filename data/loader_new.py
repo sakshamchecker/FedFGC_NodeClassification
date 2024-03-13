@@ -142,7 +142,10 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
         client_subgraph = data.subgraph(client_nodes)
         client_subgraphs.append(client_subgraph)
         start_idx = end_idx
-
+    test_nodes= test_data.num_nodes
+    node_indices = torch.randperm(test_nodes)
+    test_sub=data.subgraph(node_indices)
+    test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
     # Step 4: Package subgraphs into client-specific datasets
     client_datasets = [Data(x=subgraph.x, edge_index=subgraph.edge_index, y=subgraph.y) for subgraph in client_subgraphs]
 
