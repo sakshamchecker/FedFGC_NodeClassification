@@ -119,7 +119,7 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     cora_dataset = Planetoid(root='data', name='Cora')
     data = cora_dataset[0]
 
-    train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=0.2, random_state=42)
+    train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
     train_idx = train_idx.tolist()
     test_idx = test_idx.tolist()
 
@@ -127,7 +127,7 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     train_data = Data(x=data.x[train_idx], edge_index=data.edge_index, y=data.y[train_idx])
     test_data = Data(x=data.x[test_idx], edge_index=data.edge_index, y=data.y[test_idx])
     # Step 2: Define the number of clients and split the nodes
-    num_clients = 5
+    num_clients = client_number
     num_nodes = train_data.num_nodes
     node_indices = torch.randperm(num_nodes)
     split_sizes = [num_nodes // num_clients] * num_clients
