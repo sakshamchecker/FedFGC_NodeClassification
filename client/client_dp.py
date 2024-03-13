@@ -55,7 +55,7 @@ class FlowerClient(fl.client.NumPyClient):
         # train(model=self.model, train_loader=self.trainloader, test_loader=self.valloader, epochs=self.epochs, lr=self.args.lr, device=self.device, dp=self.dp, priv_budget=self.priv_budget, batch_size=self.args.batch_size)
         train(model=self.model, train_data=self.trainloader, epochs=self.epochs, lr=self.args.lr, device=self.device, dp=self.dp, priv_budget=self.priv_budget)
         # loss, accuracy = test(args=self.args, model=self.model, device=self.device, test_graphs=self.trainloader[self.cid])
-        loss, accuracy=test(model=self.model, loader=self.trainloader)
+        loss, accuracy=test(self.model, self.trainloader)
         end=time.time()
         print(f"Time taken for client {self.cid} is {end-start}")
         try:
@@ -74,7 +74,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.set_parameters(parameters)
         # loss,accuracy = test(self.model, self.valloader, self.device)
         # loss, accuracy = test(args=self.args, model=self.model, device=self.device, test_graphs=self.valloader)
-        loss, accuracy = test(model=self.model, loader=self.valloader)
+        loss, accuracy = test(self.model, self.valloader)
 
         try:
             os.mkdir(f"{self.path}/clientwise/{self.cid}")
