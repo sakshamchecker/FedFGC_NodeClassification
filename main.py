@@ -44,9 +44,9 @@ def run(args):
     else:
         c_methods=[True]
 
-    # for i in c_methods:
-    #     for j in p_methods:
-    #         loss, accuracy = execute(args=args, coarsen=i, path=experiment_path, priv=j)
+    for i in c_methods:
+        for j in p_methods:
+            loss, accuracy = execute(args=args, coarsen=i, path=experiment_path, priv=j)
     idxs=None
     for i in c_methods:
         for j in p_methods:
@@ -83,22 +83,25 @@ def execute(args, coarsen, path, priv):
     #     all_data, num_classes=load_data(args.data, True, coarsen=coarsen, cr_ratio=args.cr_ratio)
     # train_loader, valloader=separate_data(all_data, 42)
     # net=GNN(num_node_features, 64,num_classes)
-    train_loader, val_loader, num_node_features, num_classes=load_central_data(args.data, args.batch_size, args.tr_ratio, cr=coarsen, cr_ratio=args.cr_ratio)
+    train_loader, val_loader, num_node_features, num_classes=load_central_data(args.data, args.tr_ratio, cr=coarsen, cr_ratio=args.cr_ratio)
     if args.process == 'cpu':
         device = torch.device('cpu')
     else:
         device = torch.device('cuda')
     # net = GraphCNN(num_layers=4, num_mlp_layers=2, input_dim=train_loader[0].node_features.shape[1], hidden_dim=64, output_dim=num_classes, final_dropout=0.5, learn_eps=False, graph_pooling_type="sum", neighbor_pooling_type="sum", device=device).to(device)
     start=time.time()
-    net = GCN(num_node_features, num_classes, 32).to(device)
+    # net = GCN(num_node_features, num_classes, 32).to(device)
+    net = GCN(num_node_features, num_classes).to(device)
     end=time.time()
     # train(net=net, trainloader=train_loader, epochs=args.epochs, device=device)
     # original_params = get_parameters(net)
-    mod=train(model=net, train_loader=train_loader, test_loader=val_loader, epochs=args.epochs, lr=0.01, dp=priv, priv_budget=args.priv_budget, device=device, batch_size=args.batch_size)
+    # mod=train(model=net, train_loader=train_loader, test_loader=val_loader, epochs=args.epochs, lr=0.01, dp=priv, priv_budget=args.priv_budget, device=device, batch_size=args.batch_size)
+    mod=train(model=net, train_data=train_loader, epochs=args.epochs, lr=args.lr, dp=priv, priv_budget=args.priv_budget, device=device)
     # mod,train_loss=train(args=args, model=net, device=device, train_graphs=train_loader, epochs=args.epochs, test_graphs=valloader, optimizer=optimizer, dp=priv)
     net=copy.deepcopy(mod)
     # loss, accuracy=test(args=args, model=net, device=device, test_graphs=train_loader)
-    loss, accuracy=test(model=net, loader=train_loader, batch_size=args.batch_size)
+    # loss, accuracy=test(model=net, loader=train_loader, batch_size=args.batch_size)
+    loss, accuracy=test(model=net, test_data=train_loader)
     try:
         data = pd.read_csv(f"{path}/results_train.csv")
         data.drop(["Unnamed: 0"], axis=1, inplace=True)
@@ -108,7 +111,8 @@ def execute(args, coarsen, path, priv):
     data.to_csv(f"{path}/results_train.csv")
     # loss, accuracy = test(model=net, testloader=valloader, device=device)
     # loss, accuracy=test(args=args, model=net, device=device, test_graphs=valloader)
-    loss, accuracy=test(model=net, loader=val_loader, batch_size=args.batch_size)
+    # loss, accuracy=test(model=net, loader=val_loader, batch_size=args.batch_size)
+    loss, accuracy=test(model=net, test_data=val_loader)
     try:
         data = pd.read_csv(f"{path}/results_test.csv")
         data.drop(["Unnamed: 0"], axis=1, inplace=True)

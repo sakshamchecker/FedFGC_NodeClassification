@@ -157,3 +157,23 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     client_datasets = [Data(x=subgraph.x, edge_index=subgraph.edge_index, y=subgraph.y) for subgraph in client_subgraphs]
 
     return client_datasets, test_data, cora_dataset.num_features, cora_dataset.num_classes
+
+
+def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
+    cora_dataset = Planetoid(root='data', name=data_name)
+    data = cora_dataset[0]
+    if data_name=='Cora':
+        c_params=[0.001, 0.0001, 1, 0.0001] 
+
+    train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
+    train_idx = train_idx.tolist()
+    test_idx = test_idx.tolist()
+
+    # Index the Data object attributes with Python lists
+    train_data = Data(x=data.x[train_idx], edge_index=data.edge_index, y=data.y[train_idx])
+    test_data = Data(x=data.x[test_idx], edge_index=data.edge_index, y=data.y[test_idx])
+    if cr:
+        X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
+        X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
+        train_data=Data(x=X_new, edge_index=edge_idx, y=labels_new)
+    return train_data, test_data, cora_dataset.num_features, cora_dataset.num_classes
