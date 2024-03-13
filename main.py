@@ -128,9 +128,9 @@ def execute_FL(args, coarsen, path, idxs=None, priv=False):
     # if not idxs:
         # train_loaders, test_loaders,num_node_features, num_classes, idxs=load_clients_data(data_name=args.data, batch_size=args.batch_size, client_number=int(args.ncl), tr_ratio=args.tr_ratio, alpha=args.alpha, cr=coarsen, client_data=idxs, cr_ratio=args.cr_ratio)
     train_loaders, test_loaders, num_node_features, num_classes=load_clients_data(args.data, args.ncl, args.tr_ratio, cr=coarsen, cr_ratio=args.cr_ratio)
-    with open(f"{path}/idxs.txt", "w") as f:
-        for i in range(len(idxs)):
-            f.write(f"{i} {len(idxs[i])}\n")
+    # with open(f"{path}/idxs.txt", "w") as f:
+    #     for i in range(len(idxs)):
+    #         f.write(f"{i} {len(idxs[i])}\n")
     if args.process == 'cpu':
         device = torch.device('cpu')
     else:
