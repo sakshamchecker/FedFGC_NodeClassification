@@ -116,8 +116,10 @@ from torch_geometric.data import Data, DataLoader
 from sklearn.model_selection import train_test_split
 
 def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
-    cora_dataset = Planetoid(root='data', name='Cora')
+    cora_dataset = Planetoid(root='data', name=data_name)
     data = cora_dataset[0]
+    if data_name=='Cora':
+        c_params=[0.001, 0.0001, 1, 0.0001] 
 
     train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
     train_idx = train_idx.tolist()
@@ -141,7 +143,8 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
         client_nodes = node_indices[start_idx:end_idx]
         client_subgraph = data.subgraph(client_nodes)
         if cr:
-            client_subgraph=coarse()
+            X,adj,labels,features,NO_OF_CLASSES= preprocess(client_subgraph.x, client_subgraph.edge_index, client_subgraph.y)
+            client_subgraph=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
         client_subgraphs.append(client_subgraph)
         start_idx = end_idx
     test_nodes= test_data.num_nodes
