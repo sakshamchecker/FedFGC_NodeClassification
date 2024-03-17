@@ -2,6 +2,37 @@ import numpy as np
 from torch_geometric.datasets import TUDataset
 from torch_geometric.data import DataLoader
 from privacy.coarsening import coarse, preprocess
+
+
+import scanpy as sc
+from torch import nn
+from torch.utils.data import DataLoader, TensorDataset, random_split
+import torch.nn.functional as F
+import torch.optim as optim
+import pandas as pd
+from sklearn.decomposition import PCA
+import torch
+import numpy as np
+from sklearn.metrics import confusion_matrix
+from sklearn import metrics
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.cluster import KMeans
+from sklearn.datasets import make_blobs
+from sklearn.manifold import SpectralEmbedding
+from sklearn.preprocessing import LabelEncoder
+from sklearn.neighbors import NearestNeighbors
+import matplotlib.pyplot as plt
+import networkx as nx
+from scipy.sparse import csr_matrix
+from torch_geometric.utils import from_networkx
+import numpy as np
+from sklearn.neighbors import kneighbors_graph
+import time
+import networkx as nx
+import sys
+
+
 def partition_class_samples_with_dirichlet_distribution(
     N, alpha, client_num, idx_batch, idx_k
 ):
@@ -116,10 +147,17 @@ from torch_geometric.data import Data, DataLoader
 from sklearn.model_selection import train_test_split
 
 def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
-    cora_dataset = Planetoid(root='data', name=data_name)
-    data = cora_dataset[0]
     if data_name=='Cora':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
         c_params=[0.001, 0.0001, 1, 0.0001] 
+        data = cora_dataset[0]
+
+    elif data_name=='XIN':
+        rna_matrix_=pd.read_csv('data/Xin/Filtered_Xin_HumanPancreas_data.csv')
+        cell_type_=pd.read_csv('data/Xin/Labels.csv')
+        data=Graph_Build_from_data(rna_matrix_,cell_type_)
+        c_params=[0.001, 0.0001, 1, 0.0001]
 
     train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
     train_idx = train_idx.tolist()
@@ -159,11 +197,62 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     return client_datasets, test_data, cora_dataset.num_features, cora_dataset.num_classes
 
 
+
+def perform_qc(adata):
+    sc.pp.filter_genes(adata, min_cells=1)
+    sc.pp.calculate_qc_metrics(adata, inplace=True)
+
+    min_genes_by_cells = 200
+    adata = adata[adata.obs.n_genes_by_counts > min_genes_by_cells, :]
+
+    min_cells_by_genes = 3
+    adata = adata[:, adata.var.n_cells_by_counts > min_cells_by_genes]
+
+    # Filter based on total_counts or pct_dropout_by_counts
+
+    return adata
+
+def Graph_Build_from_data(rna_matrix_,cell_type):
+
+# Assuming 'y_train' and 'y_test' are your original labels with strings
+    label_encoder = LabelEncoder()
+    cell_type = label_encoder.fit_transform(cell_type)
+
+    rna_matrix_ = rna_matrix_.set_index(['Unnamed: 0'])
+
+    adata = sc.AnnData(rna_matrix_)
+
+
+    rna_matrix_qc = perform_qc(adata)
+    data = rna_matrix_qc.X
+    pca = PCA(n_components=50)
+    data = pca.fit_transform(data)
+
+
+    knn = NearestNeighbors(n_neighbors=5)  # Adjust 'n_neighbors' as needed
+    knn.fit(data)
+
+    # Build the KNN graph
+    knn_graph = knn.kneighbors_graph(data, mode='distance')
+    G = nx.from_scipy_sparse_array(knn_graph)
+    obj = from_networkx(G)
+    obj.x = torch.Tensor(data)
+    obj.y = torch.Tensor(cell_type)
+    return obj
+
 def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
-    cora_dataset = Planetoid(root='data', name=data_name)
-    data = cora_dataset[0]
     if data_name=='Cora':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
         c_params=[0.001, 0.0001, 1, 0.0001] 
+        data = cora_dataset[0]
+
+    elif data_name=='XIN':
+        rna_matrix_=pd.read_csv('data/Xin/Filtered_Xin_HumanPancreas_data.csv')
+        cell_type_=pd.read_csv('data/Xin/Labels.csv')
+        data=Graph_Build_from_data(rna_matrix_,cell_type_)
+        c_params=[0.001, 0.0001, 1, 0.0001]
+
 
     train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
     train_idx = train_idx.tolist()
