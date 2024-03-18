@@ -34,6 +34,7 @@ def one_hot(x, class_count):
     # return torch.eye(class_count)[xtemp, :].cuda()
     return torch.eye(class_count)[xtemp, :]
 def experiment(lambda_param,beta_param,alpha_param,gamma_param,C,X_tilde,theta,X,p,n,k):
+      device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
       thresh = 1e-10
       ones = csr_matrix(np.ones((k,k)))
       ones = convertScipyToTensor(ones)
@@ -62,7 +63,7 @@ def experiment(lambda_param,beta_param,alpha_param,gamma_param,C,X_tilde,theta,X
         X = X
 
       if(torch.cuda.is_available()):
-        # print("yes")
+        print("yes")
         X_tilde = X_tilde.cuda()
         C = C.cuda()
         theta = theta.cuda()
@@ -180,3 +181,49 @@ def preprocess(X, edge_index, y):
   adj = adj[:nn,:nn]
   labels = labels[:nn]
   return X,adj,labels,features,NO_OF_CLASSES
+
+def coarse_graph_classification(X,adj, cr_ratio,c_param):
+  features=X.numpy()
+  p = X.shape[0]
+  k = int(p*cr_ratio)   ###Corasening ratio
+  n = X.shape[1]
+  temp = CustomDistribution(seed=1)
+  temp2 = temp()
+  theta = get_laplacian(adj)
+  print(theta.shape)
+  X_tilde = random(k, n, density=0.15, random_state=1, data_rvs=temp2.rvs)
+  C = random(p, k, density=0.15, random_state=1, data_rvs=temp2.rvs)
+  X_t_0,C_0 = experiment(c_param[0],c_param[1],c_param[2],c_param[3],C,X_tilde,theta,X,p,n,k)
+  L=theta
+  C_t_0 = C_0.T
+  C_0_new=torch.zeros(C_0.shape)
+  for i in range(C_0.shape[0]):
+      C_0_new[i][torch.argmax(C_0[i])] = 1
+
+  Lc = C_0_new.T@L@C_0_new
+  # Wc = (-1*Lc)*(1-torch.eye(Lc.shape[0]).cuda())
+  Wc = (-1*Lc)*(1-torch.eye(Lc.shape[0]))
+  # print(Wc.shape)
+  # print(C_0_new.shape)
+
+  Wc[Wc<0.1] = 0
+  Wc = Wc.cpu().detach().numpy()
+  Wc = sparse.csr_matrix(Wc)
+  Wc = Wc.tocoo()
+  row = torch.from_numpy(Wc.row).to(torch.long)
+  col = torch.from_numpy(Wc.col).to(torch.long)
+  edge_index_coarsen2 = torch.stack([row, col], dim=0)
+  edge_weight = torch.from_numpy(Wc.data)
+  
+  P = torch.linalg.pinv(C_0_new)
+
+  Wc = Wc.toarray()
+  try:
+    X = torch.tensor(features.todense())
+  except:
+    X = torch.tensor(features)
+  X1=X
+  X1=torch.tensor(X1)
+  Xt = P@X1
+  x=sample(range(0, int(k)), k)
+  return torch.Tensor(Xt), edge_index_coarsen2

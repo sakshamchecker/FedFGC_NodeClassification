@@ -158,7 +158,12 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
         cell_type_=pd.read_csv('data/Xin/Labels.csv')
         data=Graph_Build_from_data(rna_matrix_,cell_type_)
         c_params=[0.001, 0.0001, 1, 0.0001]
-
+    num_features=data.x.shape[1]
+    li=[]
+    for i in data.y:
+        if i not in li:
+            li.append(i)
+    num_classes=len(li)
     train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
     train_idx = train_idx.tolist()
     test_idx = test_idx.tolist()
@@ -194,7 +199,7 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     # Step 4: Package subgraphs into client-specific datasets
     client_datasets = [Data(x=subgraph.x, edge_index=subgraph.edge_index, y=subgraph.y) for subgraph in client_subgraphs]
 
-    return client_datasets, test_data, cora_dataset.num_features, cora_dataset.num_classes
+    return client_datasets, test_data, num_features, num_classes
 
 
 
@@ -217,9 +222,10 @@ def Graph_Build_from_data(rna_matrix_,cell_type):
 # Assuming 'y_train' and 'y_test' are your original labels with strings
     label_encoder = LabelEncoder()
     cell_type = label_encoder.fit_transform(cell_type)
-
-    rna_matrix_ = rna_matrix_.set_index(['Unnamed: 0'])
-
+    try:
+        rna_matrix_ = rna_matrix_.set_index(['Unnamed: 0'])
+    except:
+        print('')
     adata = sc.AnnData(rna_matrix_)
 
 
@@ -252,7 +258,12 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
         cell_type_=pd.read_csv('data/Xin/Labels.csv')
         data=Graph_Build_from_data(rna_matrix_,cell_type_)
         c_params=[0.001, 0.0001, 1, 0.0001]
-
+    num_features=data.x.shape[1]
+    li=[]
+    for i in data.y:
+        if i not in li:
+            li.append(i)
+    num_classes=len(li)
 
     train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
     train_idx = train_idx.tolist()
@@ -273,4 +284,4 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
         X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
         X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
         train_data=Data(x=X_new, edge_index=edge_idx, y=labels_new)
-    return train_data, test_data, cora_dataset.num_features, cora_dataset.num_classes
+    return train_data, test_data, num_features, num_classes

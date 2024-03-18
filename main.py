@@ -117,8 +117,8 @@ def execute(args, coarsen, path, priv):
         data = pd.read_csv(f"{path}/results_test.csv")
         data.drop(["Unnamed: 0"], axis=1, inplace=True)
     except:
-        data = pd.DataFrame(columns=["Method","Coarsen","Privacy","Data","Round","Client Number", "Loss","Accuracy"])
-    data = pd.concat([data, pd.Series(['AllData', coarsen,priv,"Test", 0, 0, tranc_floating(loss), tranc_floating(accuracy)], index=data.columns).to_frame().T], ignore_index=True)
+        data = pd.DataFrame(columns=["Method","Coarsen","Privacy","Data","Round","Client Number", "Loss","Accuracy", "Time"])
+    data = pd.concat([data, pd.Series(['AllData', coarsen,priv,"Test", 0, 0, tranc_floating(loss), tranc_floating(accuracy), 0], index=data.columns).to_frame().T], ignore_index=True)
     data.to_csv(f"{path}/results_test.csv") 
     print(f'Accuracy: {accuracy:.4f} Loss: {loss:.4f}')
     del net, train_loader, val_loader
@@ -149,8 +149,8 @@ def execute_FL(args, coarsen, path, idxs=None, priv=False):
         print("")
     def client_fn(cid):
         return FlowerClient(cid, net, train_loaders[int(cid)], test_loaders, args.epochs, path=path, state=coarsen, device=device, args=args, dp=priv, priv_budget=args.priv_budget) 
-    ray_args = {'num_cpus':4, 'num_gpus':0}
-    client_resources = {"num_cpus": 4, "num_gpus": 0}
+    ray_args = {'num_cpus':4, 'num_gpus':1}
+    client_resources = {"num_cpus": 4, "num_gpus": 1}
     if args.strat=="FedAvg":
         st=FedAvgWithAccuracyMetric(
             min_available_clients=int(args.ncl),
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     parser.add_argument('--rounds', default=10, type=int, help='number of rounds')
     parser.add_argument('--output', default='output', type=str, help='output folder')
     parser.add_argument('--tr_ratio', default=0.8, type=float, help='train ratio')
-    parser.add_argument('--process', default='cpu', type=str, help='cpu or gpu')
+    parser.add_argument('--process', default='cuda', type=str, help='cpu or gpu')
     parser.add_argument('--epochs', default=20, type=int, help='number of epochs')
     parser.add_argument('--data', default='XIN', type=str, help='dataset')
     parser.add_argument('--alpha', default=10, type=float, help='alpha')

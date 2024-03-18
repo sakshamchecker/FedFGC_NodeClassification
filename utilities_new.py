@@ -66,11 +66,14 @@ def train(model,train_loader, test_loader,epochs, lr, device, dp, priv_budget, b
 def train(model, train_data, epochs, lr, device, dp, priv_budget):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=0.0001)
     criterion = torch.nn.CrossEntropyLoss()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+    train_data.to(device)
     for epoch in range(epochs):
         model.train()
         optimizer.zero_grad()
         out = model(train_data.x, train_data.edge_index)
-        loss = criterion(out, train_data.y)
+        loss = criterion(out, train_data.y.type(torch.LongTensor).to(device))
         loss.backward()
         if dp:
             delta=0.2
@@ -88,10 +91,13 @@ def train(model, train_data, epochs, lr, device, dp, priv_budget):
 
 def test(model, test_data):
     model.eval()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+    test_data.to(device)
     criterion = torch.nn.CrossEntropyLoss()
     out = model(test_data.x, test_data.edge_index)
     pred = out.argmax(dim=1)
     correct = (pred == test_data.y).sum()
     acc = int(correct) / int(test_data.y.shape[0])
-    loss = criterion(out, test_data.y)
+    loss = criterion(out, test_data.y.type(torch.LongTensor).to(device))
     return loss.item(), acc
