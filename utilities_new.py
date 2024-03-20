@@ -86,7 +86,10 @@ def train(model, train_data, epochs, lr, device, dp, priv_budget):
                         noise = torch.tensor(torch.randn_like(param.grad) * sigma)
                         param.grad += noise 
         optimizer.step()
-        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}')
+        # print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}')
+        loss,acc=test(model,train_data)
+        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Accuracy: {acc:.4f}')
+
     return model
 
 def test(model, test_data):

@@ -29,10 +29,32 @@ def get_laplacian(adj):
     b=torch.ones(adj.shape[0])
     return torch.diag(adj@b)-adj
 
-def one_hot(x, class_count):
-    xtemp = x
-    # return torch.eye(class_count)[xtemp, :].cuda()
-    return torch.eye(class_count)[xtemp, :]
+# def one_hot(x, class_count):
+#     xtemp = x.astype(int)
+#     print(xtemp)
+#     # return torch.eye(class_count)[xtemp, :].cuda()
+#     return torch.eye(class_count)[xtemp, :]
+def one_hot(x,class_count):
+    data=x
+    unique_values = np.unique(data)
+
+# Create a dictionary mapping each unique value to an integer
+    value_to_int = {value: i for i, value in enumerate(unique_values)}
+
+    # Convert the string array to numerical array using the mapping
+    numerical_data = np.array([value_to_int[value] for value in data])
+
+    # Determine the number of unique values in the numerical array
+    num_classes = len(unique_values)
+
+    # Initialize an empty array to hold the one-hot encoded data
+    one_hot_encoded = np.zeros((len(data), num_classes))
+
+    # Iterate over each value in the numerical array
+    for i, val in enumerate(numerical_data):
+        # Set the corresponding element in the one-hot encoded array to 1
+        one_hot_encoded[i, val] = 1
+    return torch.tensor(one_hot_encoded)
 def experiment(lambda_param,beta_param,alpha_param,gamma_param,C,X_tilde,theta,X,p,n,k):
       device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
       thresh = 1e-10

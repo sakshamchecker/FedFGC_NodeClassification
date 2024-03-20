@@ -31,7 +31,7 @@ def run(args):
     experiment_path = f"{args.output}/{datetime.now().strftime('%Y%m%d_%H%M%S')}_{args.ncl}_{args.rounds}_{args.tr_ratio}_{args.epochs}_{args.data}_{args.strat}_Coarsen_{args.coarsen}_{args.cr_ratio}_Privacy_{args.privacy}_PrivBudget_{args.priv_budget}"
     print(f"Experiment path: {experiment_path}")
     os.makedirs(experiment_path, exist_ok=True)
-    if args.privacy=='All':
+    if args.privacy=='All' or args.privacy=='all':
         p_methods=[False, True]
     elif args.privacy=='False' or args.privacy=='false':
         p_methods=[False]
@@ -199,11 +199,11 @@ if __name__ == "__main__":
     parser.add_argument('--alpha', default=10, type=float, help='alpha')
     parser.add_argument('--batch_size', default=16, type=int, help='batch size')
     parser.add_argument('--strat', default='FedAvg', type=str, help='strategy')
-    parser.add_argument('--privacy', default="All", type=str, help='privacy')
-    parser.add_argument('--coarsen', default="All", type=str, help='coarsen')
+    parser.add_argument('--privacy', default="all", type=str, help='privacy')
+    parser.add_argument('--coarsen', default="all", type=str, help='coarsen')
     parser.add_argument('--cr_ratio', default=0.5, type=float, help='coarsen ratio')
     parser.add_argument('--priv_budget', default=0.15, type=float, help='privacy budget')
-    parser.add_argument('--lr' , default=0.001, type=float, help='learning rate')
+    parser.add_argument('--lr' , default=0.1, type=float, help='learning rate')
     
     args = parser.parse_args()
     run(args)

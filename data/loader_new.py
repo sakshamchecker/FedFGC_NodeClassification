@@ -145,34 +145,81 @@ import torch
 from torch_geometric.datasets import Planetoid
 from torch_geometric.data import Data, DataLoader
 from sklearn.model_selection import train_test_split
-
+import os
+import pickle
 def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     if data_name=='Cora':
 
         cora_dataset = Planetoid(root='data', name=data_name)
         c_params=[0.001, 0.0001, 1, 0.0001] 
         data = cora_dataset[0]
+    
 
-    elif data_name=='XIN':
-        rna_matrix_=pd.read_csv('data/Xin/data.csv')
-        cell_type_=pd.read_csv('data/Xin/Labels.csv')
-        data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.01, 0.1, 0.1, 1]
-    elif data_name=='baron_mouse':
-        rna_matrix_=pd.read_csv('data/Baron_Mouse/data.csv')
-        cell_type_=pd.read_csv('data/Baron_Mouse/Labels.csv')
-        data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.01, 0.01, 0.01, 0.01]
-    elif data_name=='baron_human':
-        rna_matrix_=pd.read_csv('data/Baron_Human/data.csv')
-        cell_type_=pd.read_csv('data/Baron_Human/Labels.csv')
-        data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.01, 0.01, 0.01, 0.01]
-    elif data_name=='Segerstolpe':
-        rna_matrix_=pd.read_csv('data/Segerstolpe/data.csv')
-        cell_type_=pd.read_csv('data/Segerstolpe/Labels.csv')
-        data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.01, 0.01, 0.01, 0.01]
+    elif data_name == 'XIN':
+        data_folder = 'data/Xin/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.1, 0.1, 1]
+
+    elif data_name == 'baron_mouse':
+        data_folder = 'data/Baron_Mouse/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'baron_human':
+        data_folder = 'data/Baron_Human/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'Segerstolpe':
+        data_folder = 'data/Segerstolpe/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'AMB':
+        data_folder = 'data/AMB/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
     num_features=data.x.shape[1]
     li=[]
     for i in data.y:
@@ -260,34 +307,101 @@ def Graph_Build_from_data(rna_matrix_,cell_type):
     obj.x = torch.Tensor(data)
     obj.y = torch.Tensor(cell_type)
     return obj
+def one_hot(x):
+    data=x
+    unique_values = np.unique(data)
 
+# Create a dictionary mapping each unique value to an integer
+    value_to_int = {value: i for i, value in enumerate(unique_values)}
+
+    # Convert the string array to numerical array using the mapping
+    numerical_data = np.array([value_to_int[value] for value in data])
+
+    # Determine the number of unique values in the numerical array
+    num_classes = len(unique_values)
+
+    # Initialize an empty array to hold the one-hot encoded data
+    one_hot_encoded = np.zeros((len(data), num_classes))
+
+    # Iterate over each value in the numerical array
+    for i, val in enumerate(numerical_data):
+        # Set the corresponding element in the one-hot encoded array to 1
+        one_hot_encoded[i, val] = 1
+    return torch.tensor(one_hot_encoded)
 def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
     if data_name=='Cora':
 
         cora_dataset = Planetoid(root='data', name=data_name)
         c_params=[0.001, 0.0001, 1, 0.0001] 
         data = cora_dataset[0]
+    
 
-    elif data_name=='XIN':
-        rna_matrix_=pd.read_csv('data/Xin/data.csv')
-        cell_type_=pd.read_csv('data/Xin/Labels.csv')
-        data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.01, 0.1, 0.1, 1]
-    elif data_name=='baron_mouse':
-        rna_matrix_=pd.read_csv('data/Baron_Mouse/data.csv')
-        cell_type_=pd.read_csv('data/Baron_Mouse/Labels.csv')
-        data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.01, 0.01, 0.01, 0.01]
-    elif data_name=='baron_human':
-        rna_matrix_=pd.read_csv('data/Baron_Human/data.csv')
-        cell_type_=pd.read_csv('data/Baron_Human/Labels.csv')
-        data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.01, 0.01, 0.01, 0.01]
-    elif data_name=='Segerstolpe':
-        rna_matrix_=pd.read_csv('data/Segerstolpe/data.csv')
-        cell_type_=pd.read_csv('data/Segerstolpe/Labels.csv')
-        data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.01, 0.01, 0.01, 0.01]
+    elif data_name == 'XIN':
+        data_folder = 'data/Xin/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.1, 0.1, 1]
+
+    elif data_name == 'baron_mouse':
+        data_folder = 'data/Baron_Mouse/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'baron_human':
+        data_folder = 'data/Baron_Human/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'Segerstolpe':
+        data_folder = 'data/Segerstolpe/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'AMB':
+        data_folder = 'data/AMB/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
     num_features=data.x.shape[1]
 
     li=[]
@@ -311,6 +425,7 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
     node_indices = torch.randperm(test_nodes)
     test_sub=data.subgraph(node_indices)
     test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
+    
     if cr:
         X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
         X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
