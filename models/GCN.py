@@ -10,33 +10,44 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 
 
+# class GCN(torch.nn.Module):
+#     def __init__(self,num_node_features, num_classes):
+#         super(GCN, self).__init__()
+#         self.conv1 = GCNConv(num_node_features, 64)
+#         self.conv2 = GCNConv(64, num_classes)
+
+#     def reset_parameters(self):
+#         self.conv1.reset_parameters()
+#         self.conv2.reset_parameters()
+
+#     def forward(self, x, edge_index):
+
+#         try:
+#           x = x.cuda()
+#         except:
+#           pass
+#         try:
+#           edge_index = edge_index.cuda()
+#         except:
+#           pass
+#         x = self.conv1(x, edge_index)
+#         x = F.relu(x)
+#         x = F.dropout(x, training=self.training)
+#         x = self.conv2(x, edge_index)
+
+#         return F.log_softmax(x, dim=1)
 class GCN(torch.nn.Module):
-    def __init__(self,num_node_features, num_classes):
-        super(GCN, self).__init__()
-        self.conv1 = GCNConv(num_node_features, 64)
-        self.conv2 = GCNConv(64, num_classes)
+  def __init__(self,num_node_features, num_classes):
+    super().__init__()
+    self.conv1=GCNConv(num_node_features, 256)
+    self.conv2=GCNConv(256, num_classes)
+  def forward(self,x,edge_index):
+    x=self.conv1(x, edge_index)
+    x=F.relu(x)
+    x=F.dropout(x, training=self.training)
+    x=self.conv2(x, edge_index)
 
-    def reset_parameters(self):
-        self.conv1.reset_parameters()
-        self.conv2.reset_parameters()
-
-    def forward(self, x, edge_index):
-
-        try:
-          x = x.cuda()
-        except:
-          pass
-        try:
-          edge_index = edge_index.cuda()
-        except:
-          pass
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training)
-        x = self.conv2(x, edge_index)
-
-        return F.log_softmax(x, dim=1)
-
+    return F.log_softmax(x,dim=1)
 
 # model = GCN(hidden_channels=32)
 # print(model)

@@ -154,10 +154,25 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
         data = cora_dataset[0]
 
     elif data_name=='XIN':
-        rna_matrix_=pd.read_csv('data/Xin/Filtered_Xin_HumanPancreas_data.csv')
+        rna_matrix_=pd.read_csv('data/Xin/data.csv')
         cell_type_=pd.read_csv('data/Xin/Labels.csv')
         data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.001, 0.0001, 1, 0.0001]
+        c_params=[0.01, 0.1, 0.1, 1]
+    elif data_name=='baron_mouse':
+        rna_matrix_=pd.read_csv('data/Baron_Mouse/data.csv')
+        cell_type_=pd.read_csv('data/Baron_Mouse/Labels.csv')
+        data=Graph_Build_from_data(rna_matrix_,cell_type_)
+        c_params=[0.01, 0.01, 0.01, 0.01]
+    elif data_name=='baron_human':
+        rna_matrix_=pd.read_csv('data/Baron_Human/data.csv')
+        cell_type_=pd.read_csv('data/Baron_Human/Labels.csv')
+        data=Graph_Build_from_data(rna_matrix_,cell_type_)
+        c_params=[0.01, 0.01, 0.01, 0.01]
+    elif data_name=='Segerstolpe':
+        rna_matrix_=pd.read_csv('data/Segerstolpe/data.csv')
+        cell_type_=pd.read_csv('data/Segerstolpe/Labels.csv')
+        data=Graph_Build_from_data(rna_matrix_,cell_type_)
+        c_params=[0.01, 0.01, 0.01, 0.01]
     num_features=data.x.shape[1]
     li=[]
     for i in data.y:
@@ -254,11 +269,27 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
         data = cora_dataset[0]
 
     elif data_name=='XIN':
-        rna_matrix_=pd.read_csv('data/Xin/Filtered_Xin_HumanPancreas_data.csv')
+        rna_matrix_=pd.read_csv('data/Xin/data.csv')
         cell_type_=pd.read_csv('data/Xin/Labels.csv')
         data=Graph_Build_from_data(rna_matrix_,cell_type_)
-        c_params=[0.001, 0.0001, 1, 0.0001]
+        c_params=[0.01, 0.1, 0.1, 1]
+    elif data_name=='baron_mouse':
+        rna_matrix_=pd.read_csv('data/Baron_Mouse/data.csv')
+        cell_type_=pd.read_csv('data/Baron_Mouse/Labels.csv')
+        data=Graph_Build_from_data(rna_matrix_,cell_type_)
+        c_params=[0.01, 0.01, 0.01, 0.01]
+    elif data_name=='baron_human':
+        rna_matrix_=pd.read_csv('data/Baron_Human/data.csv')
+        cell_type_=pd.read_csv('data/Baron_Human/Labels.csv')
+        data=Graph_Build_from_data(rna_matrix_,cell_type_)
+        c_params=[0.01, 0.01, 0.01, 0.01]
+    elif data_name=='Segerstolpe':
+        rna_matrix_=pd.read_csv('data/Segerstolpe/data.csv')
+        cell_type_=pd.read_csv('data/Segerstolpe/Labels.csv')
+        data=Graph_Build_from_data(rna_matrix_,cell_type_)
+        c_params=[0.01, 0.01, 0.01, 0.01]
     num_features=data.x.shape[1]
+
     li=[]
     for i in data.y:
         if i not in li:

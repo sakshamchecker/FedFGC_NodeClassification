@@ -203,7 +203,7 @@ if __name__ == "__main__":
     parser.add_argument('--coarsen', default="All", type=str, help='coarsen')
     parser.add_argument('--cr_ratio', default=0.5, type=float, help='coarsen ratio')
     parser.add_argument('--priv_budget', default=0.15, type=float, help='privacy budget')
-    parser.add_argument('--lr' , default=0.01, type=float, help='learning rate')
+    parser.add_argument('--lr' , default=0.001, type=float, help='learning rate')
     
     args = parser.parse_args()
     run(args)
