@@ -128,6 +128,7 @@ def execute(args, coarsen, path, priv):
     except:
         data = pd.DataFrame(columns=["Method","Coarsen","Privacy","Loss","Accuracy","AUROC","Precision","Recall", "Final_f_score"])
     data=pd.concat([data, pd.Series(['AllData', coarsen,priv, tranc_floating(test_loss), tranc_floating(test_accuracy), tranc_floating(final_auroc), tranc_floating(final_precision), tranc_floating(final_recall), tranc_floating(final_f_score)], index=data.columns).to_frame().T], ignore_index=True)
+    data.to_csv(f"{path}/attack_test.csv")
     return loss, accuracy
 
 
