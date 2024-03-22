@@ -467,7 +467,32 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0, sh_ratio=0.5):
             with open(data_folder + 'processed.pkl', 'wb') as f:
                 pickle.dump(data, f)
         c_params = [0.01, 0.01, 0.01, 0.01]
-
+    elif data_name == 'TM':
+        data_folder = 'data/TM/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+    elif data_name=='Zheng':
+        data_folder = 'data/Zheng/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
     num_features=data.x.shape[1]
 
     li=[]
