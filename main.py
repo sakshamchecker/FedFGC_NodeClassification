@@ -126,8 +126,8 @@ def execute(args, coarsen, path, priv):
         data = pd.read_csv(f"{path}/attack_test.csv")
         data.drop(["Unnamed: 0"], axis=1, inplace=True)
     except:
-        data = pd.DataFrame(columns=["Method","Loss","Accuracy","AUDOC","Precision","Recall", "Final_f_score"])
-    data=pd.concat([])
+        data = pd.DataFrame(columns=["Method","Coarsen","Privacy","Loss","Accuracy","AUROC","Precision","Recall", "Final_f_score"])
+    data=pd.concat([data, pd.Series(['AllData', coarsen,priv, tranc_floating(test_loss), tranc_floating(test_accuracy), tranc_floating(final_auroc), tranc_floating(final_precision), tranc_floating(final_recall), tranc_floating(final_f_score)], index=data.columns).to_frame().T], ignore_index=True)
     return loss, accuracy
 
 
@@ -198,15 +198,15 @@ if __name__ == "__main__":
     parser.add_argument('--ncl', default=4, type=int, help='number of clients')
     parser.add_argument('--rounds', default=10, type=int, help='number of rounds')
     parser.add_argument('--output', default='output', type=str, help='output folder')
-    parser.add_argument('--tr_ratio', default=0.8, type=float, help='train ratio')
+    parser.add_argument('--tr_ratio', default=0.5, type=float, help='train ratio')
     parser.add_argument('--process', default='cuda', type=str, help='cpu or gpu')
     parser.add_argument('--epochs', default=20, type=int, help='number of epochs')
     parser.add_argument('--data', default='XIN', type=str, help='dataset')
     parser.add_argument('--alpha', default=10, type=float, help='alpha')
     parser.add_argument('--batch_size', default=16, type=int, help='batch size')
     parser.add_argument('--strat', default='FedAvg', type=str, help='strategy')
-    parser.add_argument('--privacy', default="False", type=str, help='privacy')
-    parser.add_argument('--coarsen', default="False", type=str, help='coarsen')
+    parser.add_argument('--privacy', default="All", type=str, help='privacy')
+    parser.add_argument('--coarsen', default="All", type=str, help='coarsen')
     parser.add_argument('--cr_ratio', default=0.5, type=float, help='coarsen ratio')
     parser.add_argument('--priv_budget', default=0.15, type=float, help='privacy budget')
     parser.add_argument('--lr' , default=0.1, type=float, help='learning rate')
