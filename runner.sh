@@ -2,7 +2,7 @@
 
 # noises=(0.1 0.2 0.3 0.4)
 noises=(0.1)
-data="baron_mouse"
+data="TM"
 epochs=10
 for noise in "${noises[@]}"; do
     echo "Running $noise"

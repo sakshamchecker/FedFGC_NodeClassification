@@ -119,7 +119,7 @@ def execute(args, coarsen, path, priv):
     attack_net=Net(num_classes=num_classes)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(attack_net.parameters(), lr=0.01,weight_decay=0.0001)
-    attack_train(model=attack_net, trainloader=attack_train_loader, testloader=attack_test_loader, device=device, criterion=criterion, optimizer=optimizer, epochs=args.epochs, steps=0)
+    attack_train(model=attack_net, trainloader=attack_train_loader, testloader=attack_test_loader, device=device, criterion=criterion, optimizer=optimizer, epochs=100, steps=0)
     # del net, train_loader, val_loader
     test_loss, test_accuracy, final_auroc, final_precision, final_recall, final_f_score=attack_test(model=attack_net, testloader=attack_test_loader, device=device, trainTest=False, criterion=criterion)
     try:
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument('--ncl', default=4, type=int, help='number of clients')
     parser.add_argument('--rounds', default=10, type=int, help='number of rounds')
     parser.add_argument('--output', default='output', type=str, help='output folder')
-    parser.add_argument('--tr_ratio', default=0.5, type=float, help='train ratio')
+    parser.add_argument('--tr_ratio', default=0.8, type=float, help='train ratio')
     parser.add_argument('--process', default='cuda', type=str, help='cpu or gpu')
     parser.add_argument('--epochs', default=20, type=int, help='number of epochs')
     parser.add_argument('--data', default='XIN', type=str, help='dataset')
