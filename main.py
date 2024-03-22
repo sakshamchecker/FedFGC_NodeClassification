@@ -17,12 +17,17 @@ from utilities import train, test, tranc_floating, get_parameters, plot, set_par
 from utilities_new import train, test
 import matplotlib.pyplot as plt
 from privacy.dp import dp as DiffP
+from attack.membership_infer.attack_model import Net
+from attack.membership_infer.attack_utils import attack_test, attack_train, data_creator
 #epochs
 # epochs = 20
 import copy
 torch.manual_seed(42)
 np.random.seed(42)
 import time
+import warnings
+warnings.filterwarnings('ignore')
+
 #set random seeed
 
 #load trainloaders, and valloader
@@ -47,60 +52,47 @@ def run(args):
     for i in c_methods:
         for j in p_methods:
             loss, accuracy = execute(args=args, coarsen=i, path=experiment_path, priv=j)
-    idxs=None
-    for i in c_methods:
-        for j in p_methods:
-            start_time = time.time()
-            history,idxs=execute_FL(args, i, experiment_path,idxs, j)
-            end_time=time.time()
-            #save history to .pkl
-            with open(f"{experiment_path}/history_{i}_{j}.pkl", "wb") as f:
-                torch.save(history, f)
-            #save history to txt
-            with open(f"{experiment_path}/history_{i}_{j}.txt", "w") as f:
-                f.write(str(history))
-            try:
-                data = pd.read_csv(f"{experiment_path}/results_test.csv")
-                data.drop(["Unnamed: 0"], axis=1, inplace=True)
-            except:
-                data = pd.DataFrame(columns=["Method","Coarsen","Privacy", "Data","Round","Client Number", "Loss","Accuracy", "time"])
-            curr=pd.DataFrame(columns=['Round Number', 'Loss', 'Accuracy'])
-            #save history in a difference csv for each c_methods
-            for k in range(len(history.metrics_distributed["accuracy"])):
-                curr = pd.concat([curr, pd.Series([k, history.losses_distributed[k][-1], history.metrics_distributed["accuracy"][k][-1]], index=curr.columns).to_frame().T], ignore_index=True)
-            curr.to_csv(f"{experiment_path}/history_{i}_{j}.csv")
-            data = pd.concat([data, pd.Series(['FL_aggregated', i, j, 'Test', 'aggregated', '-' ,tranc_floating(history.losses_distributed[-1][-1]), tranc_floating(history.metrics_distributed["accuracy"][-1][-1]), end_time-start_time], index=data.columns).to_frame().T], ignore_index=True)
-            data.to_csv(f"{experiment_path}/results_test.csv")
-    plot(experiment_path, c_methods, args)
+    # idxs=None
+    # for i in c_methods:
+    #     for j in p_methods:
+    #         start_time = time.time()
+    #         history,idxs=execute_FL(args, i, experiment_path,idxs, j)
+    #         end_time=time.time()
+    #         #save history to .pkl
+    #         with open(f"{experiment_path}/history_{i}_{j}.pkl", "wb") as f:
+    #             torch.save(history, f)
+    #         #save history to txt
+    #         with open(f"{experiment_path}/history_{i}_{j}.txt", "w") as f:
+    #             f.write(str(history))
+    #         try:
+    #             data = pd.read_csv(f"{experiment_path}/results_test.csv")
+    #             data.drop(["Unnamed: 0"], axis=1, inplace=True)
+    #         except:
+    #             data = pd.DataFrame(columns=["Method","Coarsen","Privacy", "Data","Round","Client Number", "Loss","Accuracy", "time"])
+    #         curr=pd.DataFrame(columns=['Round Number', 'Loss', 'Accuracy'])
+    #         #save history in a difference csv for each c_methods
+    #         for k in range(len(history.metrics_distributed["accuracy"])):
+    #             curr = pd.concat([curr, pd.Series([k, history.losses_distributed[k][-1], history.metrics_distributed["accuracy"][k][-1]], index=curr.columns).to_frame().T], ignore_index=True)
+    #         curr.to_csv(f"{experiment_path}/history_{i}_{j}.csv")
+    #         data = pd.concat([data, pd.Series(['FL_aggregated', i, j, 'Test', 'aggregated', '-' ,tranc_floating(history.losses_distributed[-1][-1]), tranc_floating(history.metrics_distributed["accuracy"][-1][-1]), end_time-start_time], index=data.columns).to_frame().T], ignore_index=True)
+    #         data.to_csv(f"{experiment_path}/results_test.csv")
+    # plot(experiment_path, c_methods, args)
 def execute(args, coarsen, path, priv):
-    # if coarsen:
-    #     train_loader, valloader, num_node_features, num_classes = load_graphs(args.tr_ratio, coarsen=True, data_name=args.data)
-    # else:
-    #     train_loader, valloader, num_node_features, num_classes = load_graphs(args.tr_ratio, coarsen=False, data_name=args.data)
-    # if args.data in ['NCI1']:
-    #     all_data, num_classes=load_data_pre(args.data, True, coarsen=coarsen, cr_ratio=args.cr_ratio)
-    # else:
-    #     all_data, num_classes=load_data(args.data, True, coarsen=coarsen, cr_ratio=args.cr_ratio)
-    # train_loader, valloader=separate_data(all_data, 42)
-    # net=GNN(num_node_features, 64,num_classes)
-    train_loader, val_loader, num_node_features, num_classes=load_central_data(args.data, args.tr_ratio, cr=coarsen, cr_ratio=args.cr_ratio)
+    train_data,train_data_cr, val_loader,shadow_train, shadow_test, num_node_features, num_classes=load_central_data(args.data, args.tr_ratio, cr=coarsen, cr_ratio=args.cr_ratio)
     if args.process == 'cpu':
         device = torch.device('cpu')
     else:
         device = torch.device('cuda')
-    # net = GraphCNN(num_layers=4, num_mlp_layers=2, input_dim=train_loader[0].node_features.shape[1], hidden_dim=64, output_dim=num_classes, final_dropout=0.5, learn_eps=False, graph_pooling_type="sum", neighbor_pooling_type="sum", device=device).to(device)
     start=time.time()
-    # net = GCN(num_node_features, num_classes, 32).to(device)
     net = GCN(num_node_features, num_classes).to(device)
     end=time.time()
-    # train(net=net, trainloader=train_loader, epochs=args.epochs, device=device)
-    # original_params = get_parameters(net)
-    # mod=train(model=net, train_loader=train_loader, test_loader=val_loader, epochs=args.epochs, lr=0.01, dp=priv, priv_budget=args.priv_budget, device=device, batch_size=args.batch_size)
+    if coarsen:
+        train_loader=train_data_cr
+    else:
+        train_loader=train_data
+    print('-- Training Target Model --')
     mod=train(model=net, train_data=train_loader, epochs=args.epochs, lr=args.lr, dp=priv, priv_budget=args.priv_budget, device=device)
-    # mod,train_loss=train(args=args, model=net, device=device, train_graphs=train_loader, epochs=args.epochs, test_graphs=valloader, optimizer=optimizer, dp=priv)
     net=copy.deepcopy(mod)
-    # loss, accuracy=test(args=args, model=net, device=device, test_graphs=train_loader)
-    # loss, accuracy=test(model=net, loader=train_loader, batch_size=args.batch_size)
     loss, accuracy=test(model=net, test_data=train_loader)
     try:
         data = pd.read_csv(f"{path}/results_train.csv")
@@ -109,9 +101,6 @@ def execute(args, coarsen, path, priv):
         data = pd.DataFrame(columns=["Method","Coarsen","Privacy", "Data","Round","Client Number", "Loss","Accuracy", 'Time'])
     data = pd.concat([data, pd.Series(['AllData', coarsen,priv,"Train", 0, 0, tranc_floating(loss), tranc_floating(accuracy), end-start], index=data.columns).to_frame().T], ignore_index=True)
     data.to_csv(f"{path}/results_train.csv")
-    # loss, accuracy = test(model=net, testloader=valloader, device=device)
-    # loss, accuracy=test(args=args, model=net, device=device, test_graphs=valloader)
-    # loss, accuracy=test(model=net, loader=val_loader, batch_size=args.batch_size)
     loss, accuracy=test(model=net, test_data=val_loader)
     try:
         data = pd.read_csv(f"{path}/results_test.csv")
@@ -121,7 +110,24 @@ def execute(args, coarsen, path, priv):
     data = pd.concat([data, pd.Series(['AllData', coarsen,priv,"Test", 0, 0, tranc_floating(loss), tranc_floating(accuracy), 0], index=data.columns).to_frame().T], ignore_index=True)
     data.to_csv(f"{path}/results_test.csv") 
     print(f'Accuracy: {accuracy:.4f} Loss: {loss:.4f}')
-    del net, train_loader, val_loader
+    print('-- Training Shadow Model --')
+    shadow_net = GCN(num_node_features, num_classes).to(device)
+    mod=train(model=shadow_net, train_data=shadow_train, epochs=args.epochs, lr=args.lr, dp=False, priv_budget=args.priv_budget, device=device)
+    shadow_net=copy.deepcopy(mod)
+    print('-- Training Attack Model --')
+    attack_train_loader, attack_test_loader=data_creator(target_model=net, shadow_model=shadow_net, target_train=train_data, target_test=val_loader, shadow_train=shadow_train, shadow_test=shadow_test, device=device)
+    attack_net=Net(num_classes=num_classes)
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(attack_net.parameters(), lr=0.01,weight_decay=0.0001)
+    attack_train(model=attack_net, trainloader=attack_train_loader, testloader=attack_test_loader, device=device, criterion=criterion, optimizer=optimizer, epochs=args.epochs, steps=0)
+    # del net, train_loader, val_loader
+    test_loss, test_accuracy, final_auroc, final_precision, final_recall, final_f_score=attack_test(model=attack_net, testloader=attack_test_loader, device=device, trainTest=False, criterion=criterion)
+    try:
+        data = pd.read_csv(f"{path}/attack_test.csv")
+        data.drop(["Unnamed: 0"], axis=1, inplace=True)
+    except:
+        data = pd.DataFrame(columns=["Method","Loss","Accuracy","AUDOC","Precision","Recall", "Final_f_score"])
+    data=pd.concat([])
     return loss, accuracy
 
 
@@ -199,8 +205,8 @@ if __name__ == "__main__":
     parser.add_argument('--alpha', default=10, type=float, help='alpha')
     parser.add_argument('--batch_size', default=16, type=int, help='batch size')
     parser.add_argument('--strat', default='FedAvg', type=str, help='strategy')
-    parser.add_argument('--privacy', default="all", type=str, help='privacy')
-    parser.add_argument('--coarsen', default="all", type=str, help='coarsen')
+    parser.add_argument('--privacy', default="False", type=str, help='privacy')
+    parser.add_argument('--coarsen', default="False", type=str, help='coarsen')
     parser.add_argument('--cr_ratio', default=0.5, type=float, help='coarsen ratio')
     parser.add_argument('--priv_budget', default=0.15, type=float, help='privacy budget')
     parser.add_argument('--lr' , default=0.1, type=float, help='learning rate')

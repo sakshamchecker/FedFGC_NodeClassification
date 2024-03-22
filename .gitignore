@@ -1,3 +1,5 @@
 *.pt
 output/
 *.csv
+data/TM.zip
+data/Zheng.zip

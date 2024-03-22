@@ -147,6 +147,72 @@ from torch_geometric.data import Data, DataLoader
 from sklearn.model_selection import train_test_split
 import os
 import pickle
+import random
+def train_test_split_a_graph(data, tr_ratio):
+    label_idx = data.y.numpy().tolist()
+    print("label_idx", len(label_idx))
+    train_idxs = []
+    test_idxs = []
+    li=[]
+    for i in data.y:
+        if i not in li:
+            li.append(i)
+    num_classes=len(li)
+    for c in li:
+        idx = (data.y==c).nonzero().view(-1)
+        random.shuffle(idx)
+        train_nodes = idx[:int(idx.shape[0]*tr_ratio)]
+        test_nodes = idx[int(idx.shape[0]*tr_ratio):]
+        train_idxs+=train_nodes
+        test_idxs+=test_nodes
+    train_data=data.subgraph(torch.tensor(train_idxs))
+    test_data=data.subgraph(torch.tensor(test_idxs))
+
+    # train_data = Data(x=data.x[train_idxs], edge_index=data.edge_index, y=data.y[train_idxs])
+    # test_data = Data(x=data.x[test_idxs], edge_index=data.edge_index, y=data.y[test_idxs])
+    return train_data, test_data
+def shadow_target_split(data,tr_ratio, sh_ratio):
+  target_idx, shadow_idx = train_test_split(torch.arange(data.num_nodes), test_size=sh_ratio, random_state=42)
+  # target_idx = target_idx.to_list()
+  # shadow_idx = shadow_idx.to_list()
+  target_train, target_test= train_test_split_a_graph(data.subgraph(target_idx), tr_ratio)
+  shadow_train, shadow_test= train_test_split_a_graph(data.subgraph(shadow_idx), tr_ratio)
+  return target_train, target_test, shadow_train, shadow_test
+
+def clients_split_a_graph(data, num_clients, tr_ratio):
+    label_idx = data.y.numpy().tolist()
+    print("label_idx", len(label_idx))
+    train_idxs = [[] for i in range(num_clients)]
+    test_idxs = []
+    li=[]
+    for i in data.y:
+        if i not in li:
+            li.append(i)
+    num_classes=len(li)
+    for c in li:
+        idx = (data.y==c).nonzero().view(-1)
+        random.shuffle(idx)
+        train_nodes = idx[:int(idx.shape[0]*tr_ratio)]
+        test_nodes = idx[int(idx.shape[0]*tr_ratio):]
+        num_nodes=len(train_nodes)
+        split_sizes = [num_nodes // num_clients] * num_clients
+        split_sizes[-1] += num_nodes % num_clients  # Adjust for uneven split
+        start_idx=0
+        for i,size in enumerate(split_sizes):
+          end_idx = start_idx + size
+          client_nodes=train_nodes[start_idx:end_idx]
+          train_idxs[i]+=client_nodes
+          start_idx=end_idx
+        test_idxs+=test_nodes
+    # train_data=data.subgraph(torch.tensor(train_idxs))
+    train_datasets=[]
+    for i in train_idxs:
+      train_datasets.append(data.subgraph(torch.tensor(i)))
+    test_data=data.subgraph(torch.tensor(test_idxs))
+
+    # train_data = Data(x=data.x[train_idxs], edge_index=data.edge_index, y=data.y[train_idxs])
+    # test_data = Data(x=data.x[test_idxs], edge_index=data.edge_index, y=data.y[test_idxs])
+    return train_datasets, test_data
 def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     if data_name=='Cora':
 
@@ -226,41 +292,41 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
         if i not in li:
             li.append(i)
     num_classes=len(li)
-    train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
-    train_idx = train_idx.tolist()
-    test_idx = test_idx.tolist()
+    # train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
+    # train_idx = train_idx.tolist()
+    # test_idx = test_idx.tolist()
 
-    # Index the Data object attributes with Python lists
-    train_data = Data(x=data.x[train_idx], edge_index=data.edge_index, y=data.y[train_idx])
-    test_data = Data(x=data.x[test_idx], edge_index=data.edge_index, y=data.y[test_idx])
-    if cr:
-        X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
-        X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
-        train_data=Data(x=X_new, edge_index=edge_idx, y=labels_new)
-    # Step 2: Define the number of clients and split the nodes
-    num_clients = client_number
-    num_nodes = train_data.num_nodes
-    node_indices = torch.randperm(num_nodes)
-    split_sizes = [num_nodes // num_clients] * num_clients
-    split_sizes[-1] += num_nodes % num_clients  # Adjust for uneven split
+    # # Index the Data object attributes with Python lists
+    # train_data = Data(x=data.x[train_idx], edge_index=data.edge_index, y=data.y[train_idx])
+    # test_data = Data(x=data.x[test_idx], edge_index=data.edge_index, y=data.y[test_idx])
+    # if cr:
+    #     X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
+    #     X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
+    #     train_data=Data(x=X_new, edge_index=edge_idx, y=labels_new)
+    # # Step 2: Define the number of clients and split the nodes
+    # num_clients = client_number
+    # num_nodes = train_data.num_nodes
+    # node_indices = torch.randperm(num_nodes)
+    # split_sizes = [num_nodes // num_clients] * num_clients
+    # split_sizes[-1] += num_nodes % num_clients  # Adjust for uneven split
 
-    # Step 3: Create subgraphs for each client
-    client_subgraphs = []
-    start_idx = 0
-    for size in split_sizes:
-        end_idx = start_idx + size
-        client_nodes = node_indices[start_idx:end_idx]
-        client_subgraph = data.subgraph(client_nodes)
+    # # Step 3: Create subgraphs for each client
+    # client_subgraphs = []
+    # start_idx = 0
+    # for size in split_sizes:
+    #     end_idx = start_idx + size
+    #     client_nodes = node_indices[start_idx:end_idx]
+    #     client_subgraph = data.subgraph(client_nodes)
         
-        client_subgraphs.append(client_subgraph)
-        start_idx = end_idx
-    test_nodes= test_data.num_nodes
-    node_indices = torch.randperm(test_nodes)
-    test_sub=data.subgraph(node_indices)
-    test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
-    # Step 4: Package subgraphs into client-specific datasets
-    client_datasets = [Data(x=subgraph.x, edge_index=subgraph.edge_index, y=subgraph.y) for subgraph in client_subgraphs]
-
+    #     client_subgraphs.append(client_subgraph)
+    #     start_idx = end_idx
+    # test_nodes= test_data.num_nodes
+    # node_indices = torch.randperm(test_nodes)
+    # test_sub=data.subgraph(node_indices)
+    # test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
+    # # Step 4: Package subgraphs into client-specific datasets
+    # client_datasets = [Data(x=subgraph.x, edge_index=subgraph.edge_index, y=subgraph.y) for subgraph in client_subgraphs]
+    client_datasets, test_data = clients_split_a_graph(data=data, num_clients=client_number, tr_ratio=tr_ratio)
     return client_datasets, test_data, num_features, num_classes
 
 
@@ -328,7 +394,7 @@ def one_hot(x):
         # Set the corresponding element in the one-hot encoded array to 1
         one_hot_encoded[i, val] = 1
     return torch.tensor(one_hot_encoded)
-def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
+def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0, sh_ratio=0.5):
     if data_name=='Cora':
 
         cora_dataset = Planetoid(root='data', name=data_name)
@@ -410,24 +476,26 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0):
             li.append(i)
     num_classes=len(li)
 
-    train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
-    train_idx = train_idx.tolist()
-    test_idx = test_idx.tolist()
+    # train_idx, test_idx = train_test_split(torch.arange(data.num_nodes), test_size=tr_ratio, random_state=42)
+    # train_idx = train_idx.tolist()
+    # test_idx = test_idx.tolist()
 
-    # Index the Data object attributes with Python lists
-    train_data = Data(x=data.x[train_idx], edge_index=data.edge_index, y=data.y[train_idx])
-    test_data = Data(x=data.x[test_idx], edge_index=data.edge_index, y=data.y[test_idx])
-    train_nodes= train_data.num_nodes
-    node_indices = torch.randperm(train_nodes)
-    train_sub=data.subgraph(node_indices)
-    train_data = Data(x=train_sub.x, edge_index=train_sub.edge_index, y=train_sub.y)
-    test_nodes= test_data.num_nodes
-    node_indices = torch.randperm(test_nodes)
-    test_sub=data.subgraph(node_indices)
-    test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
-    
+    # # Index the Data object attributes with Python lists
+    # train_data = Data(x=data.x[train_idx], edge_index=data.edge_index, y=data.y[train_idx])
+    # test_data = Data(x=data.x[test_idx], edge_index=data.edge_index, y=data.y[test_idx])
+    # train_nodes= train_data.num_nodes
+    # node_indices = torch.randperm(train_nodes)
+    # train_sub=data.subgraph(node_indices)
+    # train_data = Data(x=train_sub.x, edge_index=train_sub.edge_index, y=train_sub.y)
+    # test_nodes= test_data.num_nodes
+    # node_indices = torch.randperm(test_nodes)
+    # test_sub=data.subgraph(node_indices)
+    # test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
+    # train_data, test_data = train_test_split_a_graph(data=data,tr_ratio=tr_ratio)
+    target_train, target_test, shadow_train, shadow_test = shadow_target_split(data, tr_ratio=tr_ratio, sh_ratio=sh_ratio)
+    target_train_cr=None
     if cr:
-        X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
+        X,adj,labels,features,NO_OF_CLASSES= preprocess(target_train.x, target_train.edge_index, target_train.y)
         X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
-        train_data=Data(x=X_new, edge_index=edge_idx, y=labels_new)
-    return train_data, test_data, num_features, num_classes
+        target_train_cr=Data(x=X_new, edge_index=edge_idx, y=labels_new)
+    return target_train,target_train_cr, target_test, shadow_train, shadow_test, num_features, num_classes
