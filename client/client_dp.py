@@ -19,15 +19,21 @@ import torch
 import copy
 import time
 # Define Flower client
+from attack.membership_infer.attack_utils import attack_test, attack_train, data_creator
 
 class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, cid, net, trainloaders, valloader, epochs, path,state, device, args, dp, priv_budget):
+    def __init__(self, cid, net, trainloaders,trainloaders_cr, valloader, epochs, path,state, device, args, dp, priv_budget, attack_net):
         self.cid = int(cid)
         # self.model = net(params[0], params[1], params[2])
         self.model = net
         # GCN(hidden_channels=32, in_channels=num_node_features, out_channels=num_classes, num_layers=3)
         # self.model=net(hidden_channels=params[1], in_channels=params[0], out_channels=params[2], num_layers=3)
-        self.trainloader = trainloaders
+        self.trainloader_non = trainloaders
+        self.trainloader_cr=trainloaders_cr
+        if state:
+            self.trainloader=self.trainloader_cr
+        else:
+            self.trainloader=self.trainloader_non
         self.valloader = valloader
         self.epochs = epochs
         self.device = device
@@ -36,6 +42,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.args = args
         self.dp=dp
         self.priv_budget=priv_budget
+        self.attack_net=attack_net
     def get_parameters(self, config):
         return [val.cpu().numpy() for name, val in self.model.state_dict().items() if 'num_batches_tracked' not in name]
 
@@ -65,6 +72,7 @@ class FlowerClient(fl.client.NumPyClient):
             data=pd.DataFrame(columns=["Method","Coarsen","Priv","Data","Round", "Client Number", "Loss","Accuracy", "Time"])
         data=pd.concat([data, pd.Series(['FL', self.state, self.dp, "Train",config['server_round']-1, self.cid, tranc_floating(loss), tranc_floating(accuracy), end-start], index=data.columns).to_frame().T], ignore_index=True)
         data.to_csv(f"{self.path}/results_train.csv")
+        
         # loss, accuracy = test(self.model, self.valloader, self.device)
         # loss,accuracy = test(args=self.args, model=self.model, device=self.device, test_graphs=self.valloader)
         
@@ -91,5 +99,24 @@ class FlowerClient(fl.client.NumPyClient):
             data=pd.DataFrame(columns=["Method","Coarsen","Priv","Data","Round", "Client Number", "Loss","Accuracy"])
         data=pd.concat([data, pd.Series(['FL', self.state, self.dp, "Test",config['server_round']-1, self.cid, tranc_floating(loss), tranc_floating(accuracy)], index=data.columns).to_frame().T], ignore_index=True)
         data.to_csv(f"{self.path}/results.csv")
-
+        print(f"----Attacking {self.cid}---")
+        for original in [True, False]:
+            if original:
+                target_train=self.trainloader_non
+            else:
+                if self.state:
+                    target_train=self.trainloader_cr
+                else:
+                    target_train=self.trainloader_non
+            attack_train_loader, attack_test_loader=data_creator(target_model=self.model, shadow_model=None, target_train=target_train, target_test=self.valloader, shadow_train=None, shadow_test=None, device=self.device)
+            criterion = torch.nn.CrossEntropyLoss()
+        # optimizer = torch.optim.Adam(attack_net.parameters(), lr=0.01,weight_decay=0.0001)
+            test_loss, test_accuracy, final_auroc, final_precision, final_recall, final_f_score=attack_test(model=self.attack_net, testloader=attack_test_loader, device=self.device, trainTest=False, criterion=criterion)
+            try:
+                data = pd.read_csv(f"{self.path}/clientwise/{self.cid}/coarse_{self.state}_{self.dp}_attack.csv")
+                data.drop(["Unnamed: 0"], axis=1, inplace=True)
+            except:
+                data = pd.DataFrame(columns=["Round","Coarsen","Privacy","Original","Loss","Accuracy","AUROC","Precision","Recall", "Final_f_score"])
+            data=pd.concat([data, pd.Series([config['server_round'], self.state,self.dp, original, tranc_floating(test_loss), tranc_floating(test_accuracy), tranc_floating(final_auroc), tranc_floating(final_precision), tranc_floating(final_recall), tranc_floating(final_f_score)], index=data.columns).to_frame().T], ignore_index=True)
+            data.to_csv(f"{self.path}/clientwise/{self.cid}/coarse_{self.state}_{self.dp}_attack.csv")
         return loss, len(self.valloader), {"accuracy": accuracy}

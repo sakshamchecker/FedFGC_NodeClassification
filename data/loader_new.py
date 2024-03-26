@@ -178,8 +178,15 @@ def shadow_target_split(data,tr_ratio, sh_ratio):
   target_train, target_test= train_test_split_a_graph(data.subgraph(target_idx), tr_ratio)
   shadow_train, shadow_test= train_test_split_a_graph(data.subgraph(shadow_idx), tr_ratio)
   return target_train, target_test, shadow_train, shadow_test
-
-def clients_split_a_graph(data, num_clients, tr_ratio):
+def shadow_target_split_fl(data,tr_ratio, sh_ratio):
+  target_idx, shadow_idx = train_test_split(torch.arange(data.num_nodes), test_size=sh_ratio, random_state=42)
+  # target_idx = target_idx.to_list()
+  # shadow_idx = shadow_idx.to_list()
+#   target_train, target_test= train_test_split_a_graph(data.subgraph(target_idx), tr_ratio)
+  target=data.subgraph(target_idx)
+  shadow_train, shadow_test= train_test_split_a_graph(data.subgraph(shadow_idx), tr_ratio)
+  return target, shadow_train, shadow_test
+def clients_split_a_graph(data, num_clients, tr_ratio, cr, cr_ratio, cr_params):
     label_idx = data.y.numpy().tolist()
     print("label_idx", len(label_idx))
     train_idxs = [[] for i in range(num_clients)]
@@ -206,20 +213,34 @@ def clients_split_a_graph(data, num_clients, tr_ratio):
         test_idxs+=test_nodes
     # train_data=data.subgraph(torch.tensor(train_idxs))
     train_datasets=[]
+    train_datasets_cr=[]
     for i in train_idxs:
       train_datasets.append(data.subgraph(torch.tensor(i)))
+      train_data=data.subgraph(torch.tensor(i))
+      if cr:
+        X,adj,labels,features,NO_OF_CLASSES= preprocess(train_data.x, train_data.edge_index, train_data.y)
+        X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=cr_params)
+        train_datasets_cr.append(Data(x=X_new, edge_index=edge_idx, y=labels_new))
+      else:
+        train_datasets_cr=[[] for i in range(num_clients)]
+          
     test_data=data.subgraph(torch.tensor(test_idxs))
 
     # train_data = Data(x=data.x[train_idxs], edge_index=data.edge_index, y=data.y[train_idxs])
     # test_data = Data(x=data.x[test_idxs], edge_index=data.edge_index, y=data.y[test_idxs])
-    return train_datasets, test_data
-def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
+    return train_datasets_cr, train_datasets, test_data
+def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0, sh_ratio=0):
     if data_name=='Cora':
 
         cora_dataset = Planetoid(root='data', name=data_name)
         c_params=[0.001, 0.0001, 1, 0.0001] 
         data = cora_dataset[0]
-    
+    elif data_name=='Citeseer':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
+        c_params=[0.001, 0.001, 0.01, 0.01] 
+        data = cora_dataset[0]
+        # print(data)
 
     elif data_name == 'XIN':
         data_folder = 'data/Xin/'
@@ -286,6 +307,32 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
             with open(data_folder + 'processed.pkl', 'wb') as f:
                 pickle.dump(data, f)
         c_params = [0.01, 0.01, 0.01, 0.01]
+    elif data_name == 'TM':
+        data_folder = 'data/TM/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+    elif data_name=='Zheng':
+        data_folder = 'data/Zheng/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
     num_features=data.x.shape[1]
     li=[]
     for i in data.y:
@@ -326,8 +373,9 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0):
     # test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
     # # Step 4: Package subgraphs into client-specific datasets
     # client_datasets = [Data(x=subgraph.x, edge_index=subgraph.edge_index, y=subgraph.y) for subgraph in client_subgraphs]
-    client_datasets, test_data = clients_split_a_graph(data=data, num_clients=client_number, tr_ratio=tr_ratio)
-    return client_datasets, test_data, num_features, num_classes
+    target_data, shadow_train, shadow_test = shadow_target_split_fl(data, tr_ratio=tr_ratio, sh_ratio=sh_ratio)
+    client_datasets_cr, client_datasets, test_data = clients_split_a_graph(data=target_data, num_clients=client_number, tr_ratio=tr_ratio, cr=cr, cr_ratio=cr_ratio, cr_params=c_params)
+    return client_datasets_cr, client_datasets, test_data,shadow_train, shadow_test, num_features, num_classes
 
 
 
@@ -400,6 +448,13 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0, sh_ratio=0.5):
         cora_dataset = Planetoid(root='data', name=data_name)
         c_params=[0.001, 0.0001, 1, 0.0001] 
         data = cora_dataset[0]
+        # print(data)
+    elif data_name=='Citeseer':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
+        c_params=[0.001, 0.001, 0.01, 0.01] 
+        data = cora_dataset[0]
+        # print(data)
     
 
     elif data_name == 'XIN':
@@ -518,6 +573,7 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0, sh_ratio=0.5):
     # test_data = Data(x=test_sub.x, edge_index=test_sub.edge_index, y=test_sub.y)
     # train_data, test_data = train_test_split_a_graph(data=data,tr_ratio=tr_ratio)
     target_train, target_test, shadow_train, shadow_test = shadow_target_split(data, tr_ratio=tr_ratio, sh_ratio=sh_ratio)
+    print(target_train)
     target_train_cr=None
     if cr:
         X,adj,labels,features,NO_OF_CLASSES= preprocess(target_train.x, target_train.edge_index, target_train.y)

@@ -94,7 +94,7 @@ def attack_test(model, testloader,criterion,device, singleClass=False, trainTest
                     # print("y_pred", y_pred)
 
                     # uncomment this to show AUROC    device='cpu'
-                    auroc += roc_auc_score(y_true.cpu().numpy(), y_pred.cpu().numpy())
+                    # auroc += roc_auc_score(y_true.cpu().numpy(), y_pred.cpu().numpy())
                     # print("auroc", auroc)
 
                     precision += precision_score(y_true.cpu().numpy(), y_pred.cpu().numpy(), average='weighted')
@@ -137,7 +137,7 @@ def attack_test(model, testloader,criterion,device, singleClass=False, trainTest
                     # print("y_pred", y_pred)
 
                     # uncomment this to show AUROC
-                    auroc += roc_auc_score(y_true.cpu().numpy(), y_pred.cpu().numpy())
+                    # auroc += roc_auc_score(y_true.cpu().numpy(), y_pred.cpu().numpy())
                     # print("auroc", auroc)
 
                     precision += precision_score(y_true.cpu().numpy(), y_pred.cpu().numpy(), average='weighted')
@@ -169,7 +169,8 @@ def attack_test(model, testloader,criterion,device, singleClass=False, trainTest
 
     test_accuracy = test_accuracy / len(testloader)
     test_loss = test_loss / len(testloader)
-    final_auroc = auroc / len(testloader)
+    # final_auroc = auroc / len(testloader)
+    final_auroc=0
     final_precision = precision / len(testloader)
     final_recall = recall / len(testloader)
     final_f_score = f_score / len(testloader)
@@ -199,22 +200,27 @@ def sub_data_creator(model, train_loader, test_loader, isTarget,device):
     return data
 
 def data_creator(target_model, shadow_model, target_train, target_test, shadow_train, shadow_test,device):
-    attack_train_data= sub_data_creator(model=shadow_model, train_loader=shadow_train, test_loader=shadow_test, isTarget=False, device=device)
-    attack_train_data_X=attack_train_data.drop(["labels"], axis=1)
-    attack_train_data_y=attack_train_data['labels']
-    attack_train_data_X, attack_train_data_y=attack_train_data_X.to_numpy(), attack_train_data_y.to_numpy()
-    attack_train_data=torch.utils.data.TensorDataset(torch.from_numpy(attack_train_data_X).float(), torch.from_numpy(
-        attack_train_data_y))
-    attack_train_data_loader = torch.utils.data.DataLoader(attack_train_data, batch_size=32, shuffle=True)
-    attack_test_data = sub_data_creator(model=target_model, train_loader=target_train, test_loader=target_test, isTarget=True, device=device )
-    attack_test_data_X=attack_test_data.drop(["labels","nodeID"], axis=1)
-    attack_test_data_y=attack_test_data['labels']
-    attack_test_data_node=attack_test_data['nodeID']
-    attack_test_data_X, attack_test_data_y, attack_test_data_node=attack_test_data_X.to_numpy(), attack_test_data_y.to_numpy(), attack_test_data_node.to_numpy()
-    # attack_test_data_X, attack_test_data_y=attack_test_data_X.to_numpy(), attack_test_data_y.to_numpy()
-    attack_test_data=torch.utils.data.TensorDataset(torch.from_numpy(attack_test_data_X).float(), torch.from_numpy(
-        attack_test_data_y),torch.from_numpy(attack_test_data_node))
-    attack_test_data_loader = torch.utils.data.DataLoader(attack_test_data, batch_size=32, shuffle=True)
-
+    if shadow_train!=None:
+        attack_train_data= sub_data_creator(model=shadow_model, train_loader=shadow_train, test_loader=shadow_test, isTarget=False, device=device)
+        attack_train_data_X=attack_train_data.drop(["labels"], axis=1)
+        attack_train_data_y=attack_train_data['labels']
+        attack_train_data_X, attack_train_data_y=attack_train_data_X.to_numpy(), attack_train_data_y.to_numpy()
+        attack_train_data=torch.utils.data.TensorDataset(torch.from_numpy(attack_train_data_X).float(), torch.from_numpy(
+            attack_train_data_y))
+        attack_train_data_loader = torch.utils.data.DataLoader(attack_train_data, batch_size=32, shuffle=True)
+    else:
+        attack_train_data_loader=None
+    if target_test!=None:
+        attack_test_data = sub_data_creator(model=target_model, train_loader=target_train, test_loader=target_test, isTarget=True, device=device )
+        attack_test_data_X=attack_test_data.drop(["labels","nodeID"], axis=1)
+        attack_test_data_y=attack_test_data['labels']
+        attack_test_data_node=attack_test_data['nodeID']
+        attack_test_data_X, attack_test_data_y, attack_test_data_node=attack_test_data_X.to_numpy(), attack_test_data_y.to_numpy(), attack_test_data_node.to_numpy()
+        # attack_test_data_X, attack_test_data_y=attack_test_data_X.to_numpy(), attack_test_data_y.to_numpy()
+        attack_test_data=torch.utils.data.TensorDataset(torch.from_numpy(attack_test_data_X).float(), torch.from_numpy(
+            attack_test_data_y),torch.from_numpy(attack_test_data_node))
+        attack_test_data_loader = torch.utils.data.DataLoader(attack_test_data, batch_size=32, shuffle=True)
+    else:
+        attack_test_data_loader=None
     return attack_train_data_loader, attack_test_data_loader
 # 

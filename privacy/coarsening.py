@@ -142,7 +142,7 @@ def coarse(X,adj,labels,features, cr_ratio,c_param):
   temp = CustomDistribution(seed=1)
   temp2 = temp()
   theta = get_laplacian(adj)
-  print(theta.shape)
+  print("theta",theta.shape)
   X_tilde = random(k, n, density=0.15, random_state=1, data_rvs=temp2.rvs)
   C = random(p, k, density=0.15, random_state=1, data_rvs=temp2.rvs)
   X_t_0,C_0 = experiment(c_param[0],c_param[1],c_param[2],c_param[3],C,X_tilde,theta,X,p,n,k)
@@ -191,9 +191,10 @@ def preprocess(X, edge_index, y):
   labels = labels.numpy()
 
   # X = x
+  print(X.shape)
   X = X.to_dense()
-  N = X.shape[0]
-  features = X.numpy()
+  # N = X.shape[0]
+  N = min(X.shape[0], adj.shape[0])
   NO_OF_CLASSES =  len(set(np.array(y)))
 
   print(X.shape, adj.shape)
@@ -202,6 +203,8 @@ def preprocess(X, edge_index, y):
   X = X[:nn,:]
   adj = adj[:nn,:nn]
   labels = labels[:nn]
+  features = X.numpy()
+  print("Preprocess",nn, X.shape, adj.shape, labels.shape)
   return X,adj,labels,features,NO_OF_CLASSES
 
 def coarse_graph_classification(X,adj, cr_ratio,c_param):
