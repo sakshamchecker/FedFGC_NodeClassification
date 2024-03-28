@@ -87,10 +87,13 @@ def train(model, train_data, epochs, lr, device, dp, priv_budget):
                         param.grad += noise 
         optimizer.step()
         # print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}')
-        loss,acc=test(model,train_data)
-        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Accuracy: {acc:.4f}')
+        loss,acc, f1, prec, recall=test(model,train_data)
+        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Accuracy: {acc:.4f}, F1 Score: {f1:.4f}, Precision: {prec:.4f}, Recall {recall:.4f}')
 
     return model
+
+import torch
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 def test(model, test_data):
     model.eval()
@@ -103,4 +106,12 @@ def test(model, test_data):
     correct = (pred == test_data.y).sum()
     acc = int(correct) / int(test_data.y.shape[0])
     loss = criterion(out, test_data.y.type(torch.LongTensor).to(device))
-    return loss.item(), acc
+
+    # Calculate F1 score, precision, and recall
+    true_labels = test_data.y.cpu().numpy()
+    predicted_labels = pred.cpu().numpy()
+    f1 = f1_score(true_labels, predicted_labels, average='weighted')
+    precision = precision_score(true_labels, predicted_labels, average='weighted')
+    recall = recall_score(true_labels, predicted_labels, average='weighted')
+
+    return loss.item(), acc, f1, precision, recall

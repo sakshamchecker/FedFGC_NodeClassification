@@ -241,6 +241,13 @@ def load_clients_data(data_name, client_number, tr_ratio, cr=False, cr_ratio=0, 
         c_params=[0.001, 0.001, 0.01, 0.01] 
         data = cora_dataset[0]
         # print(data)
+    elif data_name=='PubMed':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
+        c_params=[0.0001, 0.0001, 0.001, 1] 
+        data = cora_dataset[0]
+        # print(data)
+    
 
     elif data_name == 'XIN':
         data_folder = 'data/Xin/'
@@ -455,6 +462,12 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0, sh_ratio=0.5):
         c_params=[0.001, 0.001, 0.01, 0.01] 
         data = cora_dataset[0]
         # print(data)
+    elif data_name=='PubMed':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
+        c_params=[0.0001, 0.0001, 0.001, 1] 
+        data = cora_dataset[0]
+        # print(data)
     
 
     elif data_name == 'XIN':
@@ -580,3 +593,130 @@ def load_central_data(data_name, tr_ratio, cr=False, cr_ratio=0, sh_ratio=0.5):
         X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
         target_train_cr=Data(x=X_new, edge_index=edge_idx, y=labels_new)
     return target_train,target_train_cr, target_test, shadow_train, shadow_test, num_features, num_classes
+
+
+def load_standard_data(data_name, tr_ratio, cr=False, cr_ratio=0, sh_ratio=0.5):
+    if data_name=='Cora':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
+        c_params=[0.001, 0.0001, 1, 0.0001] 
+        data = cora_dataset[0]
+        # print(data)
+    elif data_name=='Citeseer':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
+        c_params=[0.001, 0.001, 0.01, 0.01] 
+        data = cora_dataset[0]
+        # print(data)
+    elif data_name=='PubMed':
+
+        cora_dataset = Planetoid(root='data', name=data_name)
+        c_params=[0.0001, 0.0001, 0.001, 1] 
+        data = cora_dataset[0]
+        # print(data)
+    
+
+    elif data_name == 'XIN':
+        data_folder = 'data/Xin/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.1, 0.1, 1]
+
+    elif data_name == 'baron_mouse':
+        data_folder = 'data/Baron_Mouse/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'baron_human':
+        data_folder = 'data/Baron_Human/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'Segerstolpe':
+        data_folder = 'data/Segerstolpe/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+
+    elif data_name == 'AMB':
+        data_folder = 'data/AMB/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+    elif data_name == 'TM':
+        data_folder = 'data/TM/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+    elif data_name=='Zheng':
+        data_folder = 'data/Zheng/'
+        if os.path.isfile(data_folder + 'processed.pkl'):
+            with open(data_folder + 'processed.pkl', 'rb') as f:
+                data = pickle.load(f)
+        else:
+            rna_matrix_ = pd.read_csv(data_folder + 'data.csv')
+            cell_type_ = pd.read_csv(data_folder + 'Labels.csv')
+            cell_type_ = cell_type_['Class']
+            data = Graph_Build_from_data(rna_matrix_, cell_type_)
+            with open(data_folder + 'processed.pkl', 'wb') as f:
+                pickle.dump(data, f)
+        c_params = [0.01, 0.01, 0.01, 0.01]
+    num_features=data.x.shape[1]
+
+    li=[]
+    for i in data.y:
+        if i not in li:
+            li.append(i)
+    num_classes=len(li)
+    target_train_cr=None
+    if cr:
+        X,adj,labels,features,NO_OF_CLASSES= preprocess(data.x, data.edge_index, data.y)
+        X_new, edge_idx, labels_new=coarse(X=X, adj=adj, labels=labels, features=features, cr_ratio=cr_ratio,c_param=c_params)
+        target_train_cr=Data(x=X_new, edge_index=edge_idx, y=labels_new)
+    return data,target_train_cr, data, num_features, num_classes

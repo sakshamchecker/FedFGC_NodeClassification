@@ -12,7 +12,7 @@ import argparse
 import pandas as pd
 import numpy as np
 from data.loader import split_graphs, load_graphs, load_data, separate_data, load_data_pre
-from data.loader_new import load_base_data, load_central_data, load_clients_data
+from data.loader_new import load_base_data, load_central_data, load_clients_data, load_standard_data
 from utilities import train, test, tranc_floating, get_parameters, plot, set_parameters
 from utilities_new import train, test
 import matplotlib.pyplot as plt
@@ -37,7 +37,7 @@ def str_to_bool(st):
     elif st=='False':
         return False
 def run(args):
-    experiment_path = f"{args.output}/{datetime.now().strftime('%Y%m%d_%H%M%S')}_{args.ncl}_{args.rounds}_{args.tr_ratio}_{args.epochs}_{args.data}_{args.strat}_Coarsen_{args.coarsen}_{args.cr_ratio}_Privacy_{args.privacy}_PrivBudget_{args.priv_budget}"
+    experiment_path = f"{args.output}/{datetime.now().strftime('%Y%m%d_%H%M%S')}_{args.model}_{args.ncl}_{args.rounds}_{args.tr_ratio}_{args.epochs}_{args.data}_{args.strat}_Coarsen_{args.coarsen}_{args.cr_ratio}_Privacy_{args.privacy}_PrivBudget_{args.priv_budget}"
     print(f"Experiment path: {experiment_path}")
     os.makedirs(experiment_path, exist_ok=True)
     if args.privacy=='All' or args.privacy=='all':
@@ -84,13 +84,63 @@ def run(args):
                 data.to_csv(f"{experiment_path}/results_test.csv")
     # plot(experiment_path, c_methods, args)
 def execute(args, coarsen, path, priv):
-    train_data,train_data_cr, val_loader,shadow_train, shadow_test, num_node_features, num_classes=load_central_data(args.data, args.tr_ratio, cr=coarsen, cr_ratio=args.cr_ratio)
+    if args.model=='GCN':
+        from models.GCN import GCN as GCN
+    elif args.model=='GAT':
+        from models.GAT import GAT as GCN
+    elif args.model=='Sage':
+        from models.Sage import Sage as GCN
     if args.process == 'cpu':
         device = torch.device('cpu')
     else:
         device = torch.device('cuda')
+    '''
+    Standard Training Testing for Param Verify
+    '''
+    print("Standard Training Testing for Param Verify")
+    start=time.time()
+    end=time.time()
+    train_data, train_data_cr, val_loader, num_node_features, num_classes=load_standard_data(args.data, args.tr_ratio, cr=coarsen, cr_ratio=args.cr_ratio)
+    if coarsen:
+        train_loader=train_data_cr
+    else:
+        train_loader=train_data
+    print('-- Training Target Model --')
+    net = GCN(num_node_features, num_classes).to(device)
+
+    mod=train(model=net, train_data=train_loader, epochs=args.epochs, lr=args.lr, dp=priv, priv_budget=args.priv_budget, device=device)
+    net=copy.deepcopy(mod)
+    loss, accuracy, f1, prec, recall=test(model=net, test_data=train_loader)
+    try:
+        data = pd.read_csv(f"{path}/results_train.csv")
+        data.drop(["Unnamed: 0"], axis=1, inplace=True)
+    except:
+        data = pd.DataFrame(columns=["Method","Coarsen","Privacy", "Data","Round","Client Number", "Loss","Accuracy","F1","Precision", "Recall", 'Time'])
+    data = pd.concat([data, pd.Series(['NoSplit', coarsen,priv,"Train", 0, 0, tranc_floating(loss), tranc_floating(accuracy),tranc_floating(f1), tranc_floating(prec), tranc_floating(recall), end-start], index=data.columns).to_frame().T], ignore_index=True)
+    data.to_csv(f"{path}/results_train.csv")
+    loss, accuracy, f1, prec, recall=test(model=net, test_data=val_loader)
+    try:
+        data = pd.read_csv(f"{path}/results_test.csv")
+        data.drop(["Unnamed: 0"], axis=1, inplace=True)
+    except:
+        data = pd.DataFrame(columns=["Method","Coarsen","Privacy","Data","Round","Client Number", "Loss","Accuracy","F1","Precision", "Recall", "Time"])
+    data = pd.concat([data, pd.Series(['NoSplit', coarsen,priv,"Test", 0, 0, tranc_floating(loss), tranc_floating(accuracy), tranc_floating(f1), tranc_floating(prec), tranc_floating(recall), 0], index=data.columns).to_frame().T], ignore_index=True)
+    data.to_csv(f"{path}/results_test.csv") 
+    print(f'Accuracy: {accuracy:.4f} Loss: {loss:.4f}')
+
+
+
+
+    '''
+    Split Training Testing
+    '''
+
+    train_data,train_data_cr, val_loader,shadow_train, shadow_test, num_node_features, num_classes=load_central_data(args.data, args.tr_ratio, cr=coarsen, cr_ratio=args.cr_ratio)
+   
     start=time.time()
     net = GCN(num_node_features, num_classes).to(device)
+    print(net)
+    # exit()
     end=time.time()
     if coarsen:
         train_loader=train_data_cr
@@ -99,21 +149,21 @@ def execute(args, coarsen, path, priv):
     print('-- Training Target Model --')
     mod=train(model=net, train_data=train_loader, epochs=args.epochs, lr=args.lr, dp=priv, priv_budget=args.priv_budget, device=device)
     net=copy.deepcopy(mod)
-    loss, accuracy=test(model=net, test_data=train_loader)
+    loss, accuracy, f1, prec, recall=test(model=net, test_data=train_loader)
     try:
         data = pd.read_csv(f"{path}/results_train.csv")
         data.drop(["Unnamed: 0"], axis=1, inplace=True)
     except:
-        data = pd.DataFrame(columns=["Method","Coarsen","Privacy", "Data","Round","Client Number", "Loss","Accuracy", 'Time'])
-    data = pd.concat([data, pd.Series(['AllData', coarsen,priv,"Train", 0, 0, tranc_floating(loss), tranc_floating(accuracy), end-start], index=data.columns).to_frame().T], ignore_index=True)
+        data = pd.DataFrame(columns=["Method","Coarsen","Privacy", "Data","Round","Client Number", "Loss","Accuracy","F1","Precision", "Recall", 'Time'])
+    data = pd.concat([data, pd.Series(['AllData', coarsen,priv,"Train", 0, 0, tranc_floating(loss), tranc_floating(accuracy),tranc_floating(f1), tranc_floating(prec), tranc_floating(recall), end-start], index=data.columns).to_frame().T], ignore_index=True)
     data.to_csv(f"{path}/results_train.csv")
-    loss, accuracy=test(model=net, test_data=val_loader)
+    loss, accuracy, f1, prec, recall=test(model=net, test_data=val_loader)
     try:
         data = pd.read_csv(f"{path}/results_test.csv")
         data.drop(["Unnamed: 0"], axis=1, inplace=True)
     except:
-        data = pd.DataFrame(columns=["Method","Coarsen","Privacy","Data","Round","Client Number", "Loss","Accuracy", "Time"])
-    data = pd.concat([data, pd.Series(['AllData', coarsen,priv,"Test", 0, 0, tranc_floating(loss), tranc_floating(accuracy), 0], index=data.columns).to_frame().T], ignore_index=True)
+        data = pd.DataFrame(columns=["Method","Coarsen","Privacy","Data","Round","Client Number", "Loss","Accuracy","F1","Precision", "Recall", "Time"])
+    data = pd.concat([data, pd.Series(['AllData', coarsen,priv,"Test", 0, 0, tranc_floating(loss), tranc_floating(accuracy), tranc_floating(f1), tranc_floating(prec), tranc_floating(recall), 0], index=data.columns).to_frame().T], ignore_index=True)
     data.to_csv(f"{path}/results_test.csv") 
     print(f'Accuracy: {accuracy:.4f} Loss: {loss:.4f}')
     print('-- Training Shadow Model --')
@@ -230,6 +280,7 @@ if __name__ == "__main__":
     parser.add_argument('--process', default='cuda', type=str, help='cpu or gpu')
     parser.add_argument('--epochs', default=20, type=int, help='number of epochs')
     parser.add_argument('--data', default='XIN', type=str, help='dataset')
+    parser.add_argument('--model', default='GCN', type=str, help='Model type')
     parser.add_argument('--alpha', default=10, type=float, help='alpha')
     parser.add_argument('--batch_size', default=16, type=int, help='batch size')
     parser.add_argument('--strat', default='FedAvg', type=str, help='strategy')
